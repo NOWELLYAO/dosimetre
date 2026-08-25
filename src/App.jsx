@@ -31,8 +31,8 @@ export default function App() {
             </h1>
           </div>
           <p className="text-xs text-muted font-mono max-w-sm leading-relaxed">
-            Quatre instruments pour mesurer et comparer alcool, calories et nutriments — dosés au ml et au
-            gramme près.
+            Quatre instruments pour estimer et comparer alcool, calories et nutriments à partir de données nutritionnelles
+            indicatives.
           </p>
         </header>
 
@@ -59,7 +59,7 @@ export default function App() {
 
         <footer className="py-8 border-t border-line text-center">
           <p className="text-[11px] text-muted font-mono">
-            Valeurs indicatives — usage informatif, ne remplace pas un avis médical ou nutritionnel professionnel.
+            Données indicatives — l'alcoolémie est une estimation et ne constitue jamais une mesure ni une autorisation de conduire.
           </p>
         </footer>
       </div>

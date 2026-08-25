@@ -2,22 +2,22 @@
 // Sources : moyennes de tables nutritionnelles publiques (CIQUAL / USDA), à titre indicatif uniquement.
 
 export const ALCOHOL_TYPES = [
-  { id: "biere_blonde", name: "Bière blonde", emoji: "🍺", abv: 5, sucre100: 3.5, kcalBase100: 42, defVol: 330 },
-  { id: "biere_ipa", name: "Bière IPA / forte", emoji: "🍻", abv: 6.5, sucre100: 3, kcalBase100: 45, defVol: 330 },
-  { id: "cidre", name: "Cidre", emoji: "🍏", abv: 4.5, sucre100: 5, kcalBase100: 40, defVol: 330 },
-  { id: "vin_rouge", name: "Vin rouge", emoji: "🍷", abv: 13, sucre100: 0.5, kcalBase100: 10, defVol: 750 },
-  { id: "vin_blanc", name: "Vin blanc sec", emoji: "🥂", abv: 12.5, sucre100: 1.5, kcalBase100: 12, defVol: 750 },
-  { id: "vin_moelleux", name: "Vin blanc moelleux", emoji: "🍾", abv: 12, sucre100: 6, kcalBase100: 25, defVol: 750 },
-  { id: "champagne", name: "Champagne / brut", emoji: "🥂", abv: 12, sucre100: 2, kcalBase100: 15, defVol: 750 },
-  { id: "rose", name: "Vin rosé", emoji: "🌸", abv: 12.5, sucre100: 1.5, kcalBase100: 12, defVol: 750 },
-  { id: "whisky", name: "Whisky", emoji: "🥃", abv: 40, sucre100: 0, kcalBase100: 2, defVol: 40 },
-  { id: "vodka", name: "Vodka", emoji: "🧊", abv: 40, sucre100: 0, kcalBase100: 0, defVol: 40 },
-  { id: "rhum", name: "Rhum", emoji: "🏝️", abv: 40, sucre100: 0.5, kcalBase100: 2, defVol: 40 },
-  { id: "gin", name: "Gin", emoji: "🌿", abv: 40, sucre100: 0, kcalBase100: 0, defVol: 40 },
-  { id: "tequila", name: "Tequila", emoji: "🌵", abv: 38, sucre100: 0, kcalBase100: 0, defVol: 40 },
-  { id: "liqueur", name: "Liqueur / digestif", emoji: "🍯", abv: 25, sucre100: 20, kcalBase100: 90, defVol: 40 },
-  { id: "cocktail", name: "Cocktail sucré", emoji: "🍹", abv: 15, sucre100: 10, kcalBase100: 60, defVol: 200 },
-  { id: "custom", name: "Autre / personnalisé", emoji: "⚗️", abv: 10, sucre100: 2, kcalBase100: 20, defVol: 250 },
+  { id: "biere_blonde", name: "Bière blonde", emoji: "🍺", abv: 5, sucre100: 3.5, defVol: 330 },
+  { id: "biere_ipa", name: "Bière IPA / forte", emoji: "🍻", abv: 6.5, sucre100: 3, defVol: 330 },
+  { id: "cidre", name: "Cidre", emoji: "🍏", abv: 4.5, sucre100: 5, defVol: 330 },
+  { id: "vin_rouge", name: "Vin rouge", emoji: "🍷", abv: 13, sucre100: 0.5, defVol: 750 },
+  { id: "vin_blanc", name: "Vin blanc sec", emoji: "🥂", abv: 12.5, sucre100: 1.5, defVol: 750 },
+  { id: "vin_moelleux", name: "Vin blanc moelleux", emoji: "🍾", abv: 12, sucre100: 6, defVol: 750 },
+  { id: "champagne", name: "Champagne / brut", emoji: "🥂", abv: 12, sucre100: 2, defVol: 750 },
+  { id: "rose", name: "Vin rosé", emoji: "🌸", abv: 12.5, sucre100: 1.5, defVol: 750 },
+  { id: "whisky", name: "Whisky", emoji: "🥃", abv: 40, sucre100: 0, defVol: 40 },
+  { id: "vodka", name: "Vodka", emoji: "🧊", abv: 40, sucre100: 0, defVol: 40 },
+  { id: "rhum", name: "Rhum", emoji: "🏝️", abv: 40, sucre100: 0.5, defVol: 40 },
+  { id: "gin", name: "Gin", emoji: "🌿", abv: 40, sucre100: 0, defVol: 40 },
+  { id: "tequila", name: "Tequila", emoji: "🌵", abv: 38, sucre100: 0, defVol: 40 },
+  { id: "liqueur", name: "Liqueur / digestif", emoji: "🍯", abv: 25, sucre100: 20, defVol: 40 },
+  { id: "cocktail", name: "Cocktail sucré", emoji: "🍹", abv: 15, sucre100: 10, defVol: 200 },
+  { id: "custom", name: "Autre / personnalisé", emoji: "⚗️", abv: 10, sucre100: 2, defVol: 250 },
 ];
 
 // g d'alcool pur par "unité standard" selon les pays — utile pour les repères de consommation
@@ -27,9 +27,17 @@ export const STANDARD_UNITS = [
   { id: "us", label: "Standard drink US", grams: 14 },
 ];
 
+// Repères d'alcoolémie pour afficher un contexte réglementaire.
+// Le seuil dépend du pays et peut changer : l'app ne doit jamais présenter
+// une estimation Widmark comme une mesure légale.
+export const BAC_THRESHOLDS = [
+  { id: "ci", label: "Côte d'Ivoire", limit: 0.8, note: "Seuil toléré indiqué par le Ministère des Transports." },
+  { id: "fr", label: "France", limit: 0.5, note: "Conducteur standard ; permis probatoire / transport en commun : 0,2 g/L." },
+];
+
 export const CATEGORIES = [
   { id: "lait", name: "Laits & boissons végétales", unit: "ml", icon: "🥛" },
-  { id: "huile", name: "Huiles & matières grasses", unit: "ml", icon: "🫒" },
+  { id: "huile", name: "Huiles & matières grasses", unit: "g", icon: "🫒" },
   { id: "jus", name: "Jus & boissons", unit: "ml", icon: "🧃" },
   { id: "fruit", name: "Fruits", unit: "g", icon: "🍎" },
   { id: "legume", name: "Légumes", unit: "g", icon: "🥦" },
@@ -47,10 +55,10 @@ export const PRODUCTS = [
   { id: "lait_avoine", name: "Boisson avoine", category: "lait", per100: { kcal: 46, lipides: 1.5, glucides: 6.7, sucres: 4.1, proteines: 1, fibres: 0.8, alcool: 0 }, vitamins: { calcium: 120, vitD: 0.075, vitA: 0, vitB12: 0.4 }, serving: 250, servingLabel: "1 verre (250 ml)" },
 
   // HUILES
-  { id: "huile_olive", name: "Huile d'olive", category: "huile", per100: { kcal: 884, lipides: 100, glucides: 0, sucres: 0, proteines: 0, fibres: 0, alcool: 0 }, vitamins: { vitE: 14 }, serving: 10, servingLabel: "1 c. à soupe (10 ml)" },
-  { id: "huile_tournesol", name: "Huile de tournesol", category: "huile", per100: { kcal: 884, lipides: 100, glucides: 0, sucres: 0, proteines: 0, fibres: 0, alcool: 0 }, vitamins: { vitE: 41 }, serving: 10, servingLabel: "1 c. à soupe (10 ml)" },
-  { id: "huile_colza", name: "Huile de colza", category: "huile", per100: { kcal: 884, lipides: 100, glucides: 0, sucres: 0, proteines: 0, fibres: 0, alcool: 0 }, vitamins: { vitE: 25 }, serving: 10, servingLabel: "1 c. à soupe (10 ml)" },
-  { id: "huile_coco", name: "Huile de coco", category: "huile", per100: { kcal: 862, lipides: 99, glucides: 0, sucres: 0, proteines: 0, fibres: 0, alcool: 0 }, vitamins: { vitE: 0.5 }, serving: 10, servingLabel: "1 c. à soupe (10 ml)" },
+  { id: "huile_olive", name: "Huile d'olive", category: "huile", per100: { kcal: 884, lipides: 100, glucides: 0, sucres: 0, proteines: 0, fibres: 0, alcool: 0 }, vitamins: { vitE: 14 }, serving: 10, servingLabel: "≈ 1 c. à soupe (10 g)" },
+  { id: "huile_tournesol", name: "Huile de tournesol", category: "huile", per100: { kcal: 884, lipides: 100, glucides: 0, sucres: 0, proteines: 0, fibres: 0, alcool: 0 }, vitamins: { vitE: 41 }, serving: 10, servingLabel: "≈ 1 c. à soupe (10 g)" },
+  { id: "huile_colza", name: "Huile de colza", category: "huile", per100: { kcal: 884, lipides: 100, glucides: 0, sucres: 0, proteines: 0, fibres: 0, alcool: 0 }, vitamins: { vitE: 25 }, serving: 10, servingLabel: "≈ 1 c. à soupe (10 g)" },
+  { id: "huile_coco", name: "Huile de coco", category: "huile", per100: { kcal: 862, lipides: 99, glucides: 0, sucres: 0, proteines: 0, fibres: 0, alcool: 0 }, vitamins: { vitE: 0.5 }, serving: 10, servingLabel: "≈ 1 c. à soupe (10 g)" },
   { id: "beurre", name: "Beurre", category: "huile", per100: { kcal: 717, lipides: 81, glucides: 0.7, sucres: 0.7, proteines: 0.9, fibres: 0, alcool: 0 }, vitamins: { vitA: 684 }, serving: 10, servingLabel: "1 noix (10 g)" },
 
   // JUS

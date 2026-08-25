@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { PRODUCTS, CATEGORIES, VITAMIN_LABELS } from "../data/database";
-import { scaleNutrient, formatNumber } from "../utils/calc";
+import { scaleNutrient, formatNumber, clamp } from "../utils/calc";
 import GaugeBar from "./GaugeBar";
 
 const NUTRIENTS = [
@@ -26,7 +26,7 @@ export default function FoodComparator() {
     setSelectedIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : ids.length < 6 ? [...ids, id] : ids));
   }
   function setAmount(id, val) {
-    setAmounts((a) => ({ ...a, [id]: Number(val) }));
+    setAmounts((a) => ({ ...a, [id]: clamp(val, 0, 10000) }));
   }
 
   const selected = selectedIds.map((id) => PRODUCTS.find((p) => p.id === id)).filter(Boolean);
@@ -136,6 +136,7 @@ export default function FoodComparator() {
                 <input
                   type="number"
                   min="0"
+                  max="10000"
                   step="5"
                   value={amt}
                   onChange={(e) => setAmount(product.id, e.target.value)}
@@ -169,6 +170,7 @@ export default function FoodComparator() {
                       return (
                         <span key={k} className="text-[11px] font-mono text-muted">
                           {label.name}: <span className="text-sageLight">{formatNumber(v, 1)}{label.unit}</span>
+                          {label.rdi ? <span className="text-[10px]"> ({formatNumber((v / label.rdi) * 100, 0)}% repère)</span> : null}
                         </span>
                       );
                     })}
