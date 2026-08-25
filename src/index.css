@@ -1,0 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background-color: #10181A;
+  color: #EDEAE0;
+  font-family: 'Inter', sans-serif;
+}
+
+@layer components {
+  .input-num {
+    @apply w-full bg-panel2 border border-line rounded-sm px-3 py-2 font-mono text-paper text-sm outline-none;
+  }
+  .input-num:focus {
+    @apply border-copper;
+  }
+  .input-num:focus-visible, button:focus-visible, select:focus-visible {
+    outline: 2px solid #C9762B;
+    outline-offset: 1px;
+  }
+}
+
+::selection {
+  background: #C9762B;
+  color: #10181A;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: #10181A; }
+::-webkit-scrollbar-thumb { background: #2C3A36; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #3a4a45; }
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: #2C3A36;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #C9762B;
+  cursor: pointer;
+  border: 2px solid #EDEAE0;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #C9762B;
+  cursor: pointer;
+  border: 2px solid #EDEAE0;
+}
+
+.tick-divider {
+  background-image: repeating-linear-gradient(90deg, #2C3A36 0, #2C3A36 1px, transparent 1px, transparent 8px);
+  height: 1px;
+}
+
+@keyframes fillLiquid {
+  from { height: 0%; }
+}
+.animate-fill {
+  animation: fillLiquid 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes fillBar {
+  from { width: 0%; }
+}
+.animate-bar {
+  animation: fillBar 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fill, .animate-bar { animation: none !important; }
+}
