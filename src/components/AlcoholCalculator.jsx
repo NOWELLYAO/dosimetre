@@ -1,4 +1,202 @@
-import {useMemo,useState} from 'react';import {ALCOHOL_TYPES,STANDARD_UNITS} from '../data/database';import {pureAlcoholGrams,pureAlcoholMl,alcoholKcal,carbKcal,standardUnits,bloodAlcoholEstimate,bacRange,hoursToSober,formatNumber} from '../utils/calc';import GaugeBar from './GaugeBar';
-const LIMITS={ci:{label:"Côte d'Ivoire",value:.8},fr:{label:'France',value:.5}};
-export default function AlcoholCalculator(){const[tId,setTId]=useState('biere_blonde'),t=ALCOHOL_TYPES.find(x=>x.id===tId)||ALCOHOL_TYPES[0];const[abv,setAbv]=useState(t.abv),[vol,setVol]=useState(t.defVol),[qty,setQty]=useState(1),[sugar,setSugar]=useState(t.sucre100),[weight,setWeight]=useState(70),[sex,setSex]=useState('h'),[age,setAge]=useState(30),[hours,setHours]=useState(0),[country,setCountry]=useState('ci');const pick=id=>{const x=ALCOHOL_TYPES.find(a=>a.id===id);setTId(id);setAbv(x.abv);setVol(x.defVol);setSugar(x.sucre100)};const total=vol*Math.max(1,qty),g=pureAlcoholGrams(total,abv),ml=pureAlcoholMl(total,abv),ka=alcoholKcal(total,abv),ks=carbKcal(total,sugar),kt=ka+ks;const bac=useMemo(()=>bloodAlcoholEstimate({grams:g,weightKg:weight,sex,hoursElapsed:hours}),[g,weight,sex,hours]),range=useMemo(()=>bacRange({grams:g,weightKg:weight,sex,hoursElapsed:hours}),[g,weight,sex,hours]),lim=LIMITS[country].value, sober=hoursToSober(bac),under=bac>lim?(bac-lim)/.15:0,status=bac>=lim?['badge-danger','Au-dessus du repère']:bac>=lim*.7?['badge-warn','Zone de vigilance']:['badge-safe','Sous le repère'];function save(){const a=JSON.parse(localStorage.getItem('dosimetre-history')||'[]');a.unshift({name:t.name,emoji:t.emoji,volume:total,abv,qty,bac:+bac.toFixed(2),date:new Date().toISOString()});localStorage.setItem('dosimetre-history',JSON.stringify(a.slice(0,30)));alert('Calcul enregistré dans l’historique.')}return <div className="space-y-6"><div><div className="kicker">Calculateur d’alcoolémie</div><h2 className="title">Mesurez votre consommation.</h2><p className="subtitle">Quantifiez l’alcool pur, l’énergie et une estimation théorique de l’alcoolémie.</p></div><div className="calc-grid"><div className="calc-left"><section className="drink-hero"><div><div className="section-heading"><div><h3>1 · Boisson consommée</h3><p>Choisissez un produit ou personnalisez ses paramètres.</p></div><span className="badge badge-warn">{abv}% vol.</span></div><div className="type-pills">{ALCOHOL_TYPES.slice(0,9).map(x=><button className={`type-pill ${tId===x.id?'active':''}`} key={x.id} onClick={()=>pick(x.id)}>{x.emoji} {x.name}</button>)}</div><div className="form-grid" style={{marginTop:14}}><F label="Volume par verre (ml)"><input className="input-num" type="number" min="1" value={vol} onChange={e=>setVol(Math.max(1,+e.target.value||1))}/></F><F label="Nombre de verres"><div className="stepper"><button onClick={()=>setQty(Math.max(1,qty-1))}>−</button><input className="input-num" value={qty} type="number" min="1" onChange={e=>setQty(Math.max(1,+e.target.value||1))}/><button onClick={()=>setQty(qty+1)}>+</button></div></F><F label="Taux d'alcool (% vol.)"><div className="input-with-unit"><input className="input-num alcohol-rate-input" type="number" min="0" max="60" step="0.1" value={abv} onChange={e=>setAbv(Math.min(60,Math.max(0,+e.target.value||0)))} aria-label="Taux d'alcool en pourcentage"/><span className="input-unit">% vol.</span></div><small className="field-hint">Taux général pour ce type : {formatNumber(t.abv,1)} % vol. — modifiable si besoin</small></F><F label="Sucres (g / 100 ml)"><input className="input-num" type="number" min="0" step=".1" value={sugar} onChange={e=>setSugar(Math.max(0,+e.target.value||0))}/></F></div></div><div className="drink-image">{t.image?<img src={t.image} alt={t.name} onError={e=>{e.currentTarget.style.display='none';e.currentTarget.parentElement.innerHTML=`<div class="emoji-fallback">${t.emoji}</div>`}}/>:<div className="emoji-fallback">{t.emoji}</div>}</div></section><section className="card calc-card"><div className="section-heading"><div><h3>2 · Profil</h3><p>Paramètres utilisés par l’estimation de Widmark.</p></div></div><div className="profile-grid"><F label="Poids (kg)"><input className="input-num" type="number" min="30" max="250" value={weight} onChange={e=>setWeight(Math.min(250,Math.max(30,+e.target.value||30)))}/></F><F label="Sexe biologique"><select className="select-modern" value={sex} onChange={e=>setSex(e.target.value)}><option value="h">Homme · r = 0,68</option><option value="f">Femme · r = 0,55</option></select></F><F label="Âge (ans)"><input className="input-num" type="number" min="18" max="100" value={age} onChange={e=>setAge(Math.min(100,Math.max(18,+e.target.value||18)))}/></F><F label="Repère utilisé"><select className="select-modern" value={country} onChange={e=>setCountry(e.target.value)}>{Object.entries(LIMITS).map(([k,v])=><option value={k} key={k}>{v.label} · {v.value.toLocaleString('fr-FR')} g/L</option>)}</select></F></div></section><section className="card calc-card"><div className="section-heading"><div><h3>3 · Temps écoulé</h3><p>Temps depuis le début de la consommation. L’absorption n’est pas modélisée finement.</p></div><b>{formatNumber(hours,1)} h</b></div><div className="range-wrap"><input type="range" min="0" max="12" step=".25" value={hours} onChange={e=>setHours(+e.target.value)}/><span className="range-value">{Math.floor(hours)}h{String(Math.round(hours%1*60)).padStart(2,'0')}</span></div></section><section className="card calc-card"><div className="section-heading"><div><h3>4 · Composition</h3><p>Pour {formatNumber(total,0)} ml consommés.</p></div></div><div className="grid md:grid-cols-2 gap-4"><GaugeBar label="Alcool pur" value={g} max={Math.max(g,40)} unit="g" color="copper"/><GaugeBar label="Énergie alcool" value={ka} max={Math.max(kt,250)} unit="kcal" color="copper"/><GaugeBar label="Énergie sucres" value={ks} max={Math.max(kt,250)} unit="kcal" color="sage"/><div className="result-stat"><small>Énergie totale</small><strong>{formatNumber(kt,0)} kcal</strong></div></div><div className="grid grid-cols-3 gap-2 mt-4">{STANDARD_UNITS.map(u=><div className="result-stat text-center" key={u.id}><small>{u.label}</small><strong>{formatNumber(standardUnits(total,abv,u.grams),1)}</strong></div>)}</div></section></div><aside className="result-panel"><div className="section-heading"><div><h3>Résultat & sécurité</h3><p>Estimation théorique, pas une mesure.</p></div><span className="badge badge-warn">Widmark</span></div><div className="bac-main"><div className="value">{formatNumber(bac,2)}</div><div className="unit">g/L · alcoolémie estimée</div><span className={`badge ${status[0]}`}>{status[1]}</span></div><div className="range-note">Fourchette indicative : <b>{formatNumber(range.low,2)} – {formatNumber(range.high,2)} g/L</b></div><div className="scale"><div className="scale-line"><span className="scale-dot" style={{left:`${Math.min(100,bac/2*100)}%`}}/></div><div className="scale-labels"><span>0</span><span>0,5</span><span>{lim.toLocaleString('fr-FR')}</span><span>1,5</span><span>2+</span></div></div><div className="result-stats"><div className="result-stat"><small>Alcool pur</small><strong>{formatNumber(g,1)} g</strong></div><div className="result-stat"><small>Calories</small><strong>{formatNumber(kt,0)} kcal</strong></div><div className="result-stat"><small>Repère</small><strong>{lim.toLocaleString('fr-FR')} g/L</strong></div><div className="result-stat"><small>Retour à 0 estimé</small><strong>≈ {formatNumber(sober,1)} h</strong></div></div><div className="warning" style={{marginTop:12}}>{bac>lim?<>⚠️ L’estimation dépasse le repère choisi. <b>Ne conduisez pas.</b> Calcul mathématique : ≈ {formatNumber(under,1)} h supplémentaires au rythme moyen de 0,15 g/L/h pour repasser sous le repère.</>:<>Même sous le repère, cette estimation ne garantit pas l’aptitude à conduire. Ne prenez pas le volant après avoir consommé.</>}</div><div className="result-actions"><button className="primary-btn" onClick={save}>＋ Enregistrer</button><button className="secondary-btn" onClick={()=>window.print()}>⇩ Imprimer / PDF</button></div><div className="product-strip"><div className="section-heading"><div><h3>Produits</h3><p>Repères visuels</p></div></div><div className="product-grid">{ALCOHOL_TYPES.slice(0,4).map(x=><div className="product-mini" key={x.id}><div className="pic">{x.image?<img src={x.image} alt=""/>:x.emoji}</div><div className="pbody"><strong>{x.name}</strong><span>{x.abv}% · {x.sucre100} g/100 ml</span></div></div>)}</div></div><div className="safety-mini">🛡️ <b>Important :</b> poids, sexe, repas, vitesse d’absorption et métabolisme influencent fortement le résultat réel.</div></aside></div></div>}
-function F({label,children}){return <label className="field-box"><span className="field-label">{label}</span>{children}</label>}
+import { useMemo, useState } from "react";
+import { ALCOHOL_TYPES, STANDARD_UNITS } from "../data/database";
+import {
+  pureAlcoholGrams,
+  pureAlcoholMl,
+  alcoholKcal,
+  carbKcal,
+  standardUnits,
+  bloodAlcoholEstimate,
+  hoursToSober,
+  formatNumber,
+} from "../utils/calc";
+import GraduatedCylinder from "./GraduatedCylinder";
+import GaugeBar from "./GaugeBar";
+import NumberField from "./NumberField";
+
+export default function AlcoholCalculator() {
+  const [typeId, setTypeId] = useState("vin_rouge");
+  const type = ALCOHOL_TYPES.find((t) => t.id === typeId);
+  const [abv, setAbv] = useState(type.abv);
+  const [volume, setVolume] = useState(type.defVol);
+  const [qty, setQty] = useState(1);
+  const [sucre, setSucre] = useState(type.sucre100);
+
+  const [weight, setWeight] = useState(70);
+  const [sex, setSex] = useState("h");
+  const [hours, setHours] = useState(0);
+
+  function handleType(id) {
+    const t = ALCOHOL_TYPES.find((x) => x.id === id);
+    setTypeId(id);
+    setAbv(t.abv);
+    setVolume(t.defVol);
+    setSucre(t.sucre100);
+  }
+
+  const totalVolume = volume * qty;
+  const alcMl = pureAlcoholMl(totalVolume, abv);
+  const alcG = pureAlcoholGrams(totalVolume, abv);
+  const kcalAlc = alcoholKcal(totalVolume, abv);
+  const kcalCarb = carbKcal(totalVolume, sucre);
+  const kcalTotal = kcalAlc + kcalCarb;
+
+  const bac = useMemo(
+    () => bloodAlcoholEstimate({ grams: alcG, weightKg: weight, sex, hoursElapsed: hours }),
+    [alcG, weight, sex, hours]
+  );
+  const soberHours = hoursToSober(bac);
+
+  const bacLevel =
+    bac === 0 ? { label: "Sobre", color: "sage" } :
+    bac < 0.2 ? { label: "Traces", color: "sage" } :
+    bac < 0.5 ? { label: "Sous le seuil légal (FR)", color: "sage" } :
+    bac < 0.8 ? { label: "Zone limite (0,5 g/L)", color: "copper" } :
+    { label: "Au-dessus du seuil légal", color: "alert" };
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <div className="text-xs uppercase tracking-[0.2em] text-copper font-mono mb-1">Instrument 01</div>
+        <h2 className="font-display text-2xl md:text-3xl text-paper">Alcoomètre — dosage &amp; effets</h2>
+        <p className="text-muted text-sm mt-1 max-w-xl">
+          Saisis le type de boisson, le titrage et le volume pour mesurer l'alcool pur, les calories et une
+          estimation d'alcoolémie utile au quotidien.
+        </p>
+      </div>
+
+      {/* Type selector */}
+      <div className="flex flex-wrap gap-2">
+        {ALCOHOL_TYPES.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => handleType(t.id)}
+            className={`px-3 py-2 rounded-sm border text-sm font-mono transition-colors ${
+              typeId === t.id
+                ? "border-copper bg-copper/10 text-copperLight"
+                : "border-line bg-panel text-muted hover:border-muted"
+            }`}
+          >
+            <span className="mr-1.5">{t.emoji}</span>
+            {t.name}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid lg:grid-cols-[auto_1fr] gap-8">
+        {/* Cylinder visual */}
+        <div className="bg-panel border border-line rounded-sm p-6 flex justify-center">
+          <GraduatedCylinder volumeMl={totalVolume} alcoholMl={alcMl} abv={abv} />
+        </div>
+
+        {/* Inputs */}
+        <div className="bg-panel border border-line rounded-sm p-6 space-y-5">
+          <div className="grid sm:grid-cols-2 gap-5">
+            <Field label="Titrage (% vol.)">
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min="0"
+                  max="60"
+                  step="0.5"
+                  value={abv}
+                  onChange={(e) => setAbv(Number(e.target.value))}
+                  className="w-full"
+                />
+                <NumberField min={0} max={100} value={abv} onChange={setAbv} className="input-num w-20 shrink-0 text-center" />
+              </div>
+            </Field>
+            <Field label="Sucres résiduels (g / 100 ml)">
+              <NumberField min={0} value={sucre} onChange={setSucre} />
+            </Field>
+            <Field label="Volume par verre (ml)">
+              <NumberField min={0} value={volume} onChange={setVolume} />
+            </Field>
+            <Field label="Nombre de verres">
+              <NumberField min={1} value={qty} onChange={setQty} />
+            </Field>
+          </div>
+
+          <div className="tick-divider" />
+
+          <div className="grid sm:grid-cols-3 gap-5">
+            <Field label="Poids (kg)">
+              <NumberField min={30} value={weight} onChange={setWeight} />
+            </Field>
+            <Field label="Sexe (coeff. Widmark)">
+              <select value={sex} onChange={(e) => setSex(e.target.value)} className="input-num">
+                <option value="h">Homme (0,68)</option>
+                <option value="f">Femme (0,55)</option>
+              </select>
+            </Field>
+            <Field label="Heures écoulées">
+              <NumberField min={0} value={hours} onChange={setHours} />
+            </Field>
+          </div>
+        </div>
+      </div>
+
+      {/* Results */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="bg-panel border border-line rounded-sm p-6 space-y-5">
+          <h3 className="font-mono text-xs uppercase tracking-widest text-muted">Composition — pour {formatNumber(totalVolume,0)} ml</h3>
+          <GaugeBar label="Alcool pur" value={alcG} max={Math.max(alcG, 40)} unit="g" color="copper" />
+          <GaugeBar label="Calories — alcool" value={kcalAlc} max={Math.max(kcalTotal, 200)} unit="kcal" color="copper" />
+          <GaugeBar label="Calories — sucres" value={kcalCarb} max={Math.max(kcalTotal, 200)} unit="kcal" color="sage" />
+          <div className="pt-2 flex justify-between items-baseline border-t border-line">
+            <span className="text-sm text-muted font-mono uppercase tracking-wider">Total énergétique</span>
+            <span className="font-display text-2xl text-paper">{formatNumber(kcalTotal, 0)} kcal</span>
+          </div>
+        </div>
+
+        <div className="bg-panel border border-line rounded-sm p-6 space-y-5">
+          <h3 className="font-mono text-xs uppercase tracking-widest text-muted">Repères pour la vie active</h3>
+          <div className="grid grid-cols-3 gap-3">
+            {STANDARD_UNITS.map((u) => (
+              <div key={u.id} className="bg-panel2 border border-line rounded-sm p-3 text-center">
+                <div className="font-display text-xl text-copperLight">
+                  {formatNumber(standardUnits(totalVolume, abv, u.grams), 1)}
+                </div>
+                <div className="text-[10px] text-muted font-mono uppercase mt-1 leading-tight">{u.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="tick-divider" />
+
+          <div>
+            <div className="flex justify-between items-baseline mb-1">
+              <span className="text-sm text-muted font-mono uppercase tracking-wider">Alcoolémie estimée</span>
+              <span className={`text-xs font-mono px-2 py-0.5 rounded-sm ${bacLevel.color === "alert" ? "bg-alert/20 text-alert" : bacLevel.color === "copper" ? "bg-copper/20 text-copperLight" : "bg-sage/20 text-sageLight"}`}>
+                {bacLevel.label}
+              </span>
+            </div>
+            <div className="font-display text-3xl text-paper">{formatNumber(bac, 2)} g/L</div>
+            <p className="text-xs text-muted mt-1">
+              Seuil légal en France : 0,5 g/L (0,2 g/L jeune permis). Estimation Widmark — ne remplace pas un éthylotest.
+            </p>
+          </div>
+
+          <div className="flex justify-between items-baseline pt-2 border-t border-line">
+            <span className="text-sm text-muted font-mono uppercase tracking-wider">Retour à 0 g/L estimé</span>
+            <span className="font-mono text-lg text-paper">≈ {formatNumber(soberHours, 1)} h</span>
+          </div>
+        </div>
+      </div>
+
+      <p className="text-xs text-muted italic">
+        ⚠️ Estimations indicatives à but informatif — de nombreux facteurs (métabolisme, repas, fatigue, médicaments)
+        font varier l'alcoolémie réelle. Ne jamais prendre le volant après consommation d'alcool.
+      </p>
+    </div>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <label className="block">
+      <span className="block text-xs uppercase tracking-wider text-muted font-mono mb-1.5">{label}</span>
+      {children}
+    </label>
+  );
+}

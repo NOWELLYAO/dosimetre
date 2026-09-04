@@ -1,3 +1,127 @@
-import {useState} from 'react';import {ALCOHOL_TYPES} from '../data/database';import {pureAlcoholGrams,totalKcal,standardUnits,formatNumber} from '../utils/calc';
-const make=i=>{const t=ALCOHOL_TYPES[i%ALCOHOL_TYPES.length];return{key:Date.now()+Math.random(),typeId:t.id,abv:t.abv,volume:t.defVol,qty:1,sucre:t.sucre100}};
-export default function DrinkComparator(){const[e,setE]=useState([make(0),make(4),make(7)]);const upd=(k,p)=>setE(x=>x.map(a=>a.key===k?{...a,...p}:a));const typ=(k,id)=>{const t=ALCOHOL_TYPES.find(x=>x.id===id);upd(k,{typeId:id,abv:t.abv,volume:t.defVol,sucre:t.sucre100})};const c=e.map(a=>{const t=ALCOHOL_TYPES.find(x=>x.id===a.typeId),v=a.volume*a.qty;return{...a,t,v,g:pureAlcoholGrams(v,a.abv),k:totalKcal(v,a.abv,a.sucre),u:standardUnits(v,a.abv,10)}});return <div className="space-y-6"><div><div className="kicker">Comparateur</div><h2 className="title">Quelle boisson concentre le plus ?</h2><p className="subtitle">Comparez les quantités réellement servies, pas seulement le degré.</p></div><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{c.map(x=><article className="card p-4" key={x.key}><div className="flex gap-3 items-center mb-4"><div className="history-icon" style={{overflow:'hidden'}}>{x.t.image?<img src={x.t.image} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:x.t.emoji}</div><div className="min-w-0"><b>{x.t.name}</b><div className="muted">{x.abv}% · {x.v} ml</div></div><button className="btn btn-ghost ml-auto" onClick={()=>setE(a=>a.length>1?a.filter(z=>z.key!==x.key):a)}>×</button></div><select className="select-modern" value={x.typeId} onChange={ev=>typ(x.key,ev.target.value)}>{ALCOHOL_TYPES.map(t=><option key={t.id} value={t.id}>{t.emoji} {t.name}</option>)}</select><div className="grid grid-cols-3 gap-2 mt-3"><label><span className="field-label">Degré %</span><input className="input-num" type="number" step=".5" value={x.abv} onChange={ev=>upd(x.key,{abv:+ev.target.value})}/></label><label><span className="field-label">Volume</span><input className="input-num" type="number" value={x.volume} onChange={ev=>upd(x.key,{volume:+ev.target.value})}/></label><label><span className="field-label">Verres</span><input className="input-num" type="number" min="1" value={x.qty} onChange={ev=>upd(x.key,{qty:Math.max(1,+ev.target.value)})}/></label></div><div className="grid grid-cols-2 gap-2 mt-4"><div className="result-stat"><small>Alcool pur</small><strong>{formatNumber(x.g,1)} g</strong></div><div className="result-stat"><small>Énergie</small><strong>{formatNumber(x.k,0)} kcal</strong></div></div><div className="muted mt-3">≈ {formatNumber(x.u,1)} unités de 10 g</div></article>)}</div><button className="primary-btn" onClick={()=>e.length<6&&setE(a=>[...a,make(a.length)])}>＋ Ajouter une boisson</button></div>}
+import { useState } from "react";
+import { ALCOHOL_TYPES } from "../data/database";
+import { pureAlcoholGrams, totalKcal, standardUnits, formatNumber } from "../utils/calc";
+import GaugeBar from "./GaugeBar";
+import NumberField from "./NumberField";
+
+function newEntry(idx) {
+  const t = ALCOHOL_TYPES[idx % ALCOHOL_TYPES.length];
+  return { key: crypto.randomUUID(), typeId: t.id, abv: t.abv, volume: t.defVol, qty: 1, sucre: t.sucre100 };
+}
+
+export default function DrinkComparator() {
+  const [entries, setEntries] = useState([newEntry(4), newEntry(0)]);
+
+  function update(key, patch) {
+    setEntries((es) => es.map((e) => (e.key === key ? { ...e, ...patch } : e)));
+  }
+  function setType(key, typeId) {
+    const t = ALCOHOL_TYPES.find((x) => x.id === typeId);
+    update(key, { typeId, abv: t.abv, volume: t.defVol, sucre: t.sucre100 });
+  }
+  function addEntry() {
+    if (entries.length >= 5) return;
+    setEntries((es) => [...es, newEntry(es.length)]);
+  }
+  function removeEntry(key) {
+    setEntries((es) => (es.length > 1 ? es.filter((e) => e.key !== key) : es));
+  }
+
+  const computed = entries.map((e) => {
+    const totalVol = e.volume * e.qty;
+    const g = pureAlcoholGrams(totalVol, e.abv);
+    const kcal = totalKcal(totalVol, e.abv, e.sucre);
+    const units = standardUnits(totalVol, e.abv, 10);
+    const type = ALCOHOL_TYPES.find((t) => t.id === e.typeId);
+    return { ...e, totalVol, g, kcal, units, type };
+  });
+
+  const maxG = Math.max(...computed.map((c) => c.g), 1);
+  const maxKcal = Math.max(...computed.map((c) => c.kcal), 1);
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <div className="text-xs uppercase tracking-[0.2em] text-copper font-mono mb-1">Instrument 02</div>
+        <h2 className="font-display text-2xl md:text-3xl text-paper">Comparateur de boissons</h2>
+        <p className="text-muted text-sm mt-1 max-w-xl">
+          Place jusqu'à 5 boissons côte à côte — vin, bière, spiritueux — pour comparer l'alcool pur et les
+          calories réellement consommées.
+        </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {computed.map((c) => (
+          <div key={c.key} className="bg-panel border border-line rounded-sm p-5 space-y-4 relative">
+            {entries.length > 1 && (
+              <button
+                onClick={() => removeEntry(c.key)}
+                className="absolute top-3 right-3 text-muted hover:text-alert text-xs font-mono"
+                aria-label="Retirer"
+              >
+                ✕
+              </button>
+            )}
+            <select
+              value={c.typeId}
+              onChange={(e) => setType(c.key, e.target.value)}
+              className="input-num"
+            >
+              {ALCOHOL_TYPES.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.emoji} {t.name}
+                </option>
+              ))}
+            </select>
+            <div className="grid grid-cols-3 gap-2">
+              <label className="block">
+                <span className="block text-[10px] uppercase text-muted font-mono mb-1">Titrage %</span>
+                <NumberField min={0} value={c.abv} onChange={(v) => update(c.key, { abv: v })} />
+              </label>
+              <label className="block">
+                <span className="block text-[10px] uppercase text-muted font-mono mb-1">Vol. ml</span>
+                <NumberField min={0} value={c.volume} onChange={(v) => update(c.key, { volume: v })} />
+              </label>
+              <label className="block">
+                <span className="block text-[10px] uppercase text-muted font-mono mb-1">Qté</span>
+                <NumberField min={1} value={c.qty} onChange={(v) => update(c.key, { qty: v })} />
+              </label>
+            </div>
+
+            <div className="tick-divider" />
+
+            <GaugeBar label="Alcool pur" value={c.g} max={maxG} unit="g" color="copper" />
+            <GaugeBar label="Calories" value={c.kcal} max={maxKcal} unit="kcal" color="sage" />
+            <div className="flex justify-between text-xs font-mono text-muted pt-1">
+              <span>{formatNumber(c.totalVol, 0)} ml total</span>
+              <span>{formatNumber(c.units, 1)} unités FR</span>
+            </div>
+          </div>
+        ))}
+
+        {entries.length < 5 && (
+          <button
+            onClick={addEntry}
+            className="border border-dashed border-line rounded-sm p-5 text-muted hover:text-copperLight hover:border-copper transition-colors flex items-center justify-center font-mono text-sm min-h-[220px]"
+          >
+            + Ajouter une boisson
+          </button>
+        )}
+      </div>
+
+      {computed.length >= 2 && (
+        <div className="bg-panel2 border border-line rounded-sm p-5">
+          <p className="text-sm text-paper font-mono">
+            {(() => {
+              const sorted = [...computed].sort((a, b) => b.g - a.g);
+              const top = sorted[0];
+              const bottom = sorted[sorted.length - 1];
+              const ratio = bottom.g > 0 ? (top.g / bottom.g).toFixed(1) : "∞";
+              return `${top.type.emoji} ${top.type.name} apporte ${ratio}× plus d'alcool pur que ${bottom.type.emoji} ${bottom.type.name} dans les quantités saisies.`;
+            })()}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}

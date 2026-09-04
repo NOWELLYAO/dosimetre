@@ -1,13 +1,55 @@
-export const ETHANOL_DENSITY=0.789,KCAL_PER_G_ALCOHOL=7,KCAL_PER_G_CARB=4;
-export const ELIMINATION={low:0.10,average:0.15,high:0.20};
-export const pureAlcoholMl=(v,a)=>Math.max(0,Number(v)*Number(a)/100);
-export const pureAlcoholGrams=(v,a)=>pureAlcoholMl(v,a)*ETHANOL_DENSITY;
-export const alcoholKcal=(v,a)=>pureAlcoholGrams(v,a)*KCAL_PER_G_ALCOHOL;
-export const carbKcal=(v,s)=>Math.max(0,Number(v))*Math.max(0,Number(s))/100*KCAL_PER_G_CARB;
-export const totalKcal=(v,a,s)=>alcoholKcal(v,a)+carbKcal(v,s);
-export const standardUnits=(v,a,g)=>pureAlcoholGrams(v,a)/g;
-export function bloodAlcoholEstimate({grams,weightKg,sex='h',hoursElapsed=0}){const r=sex==='f'?0.55:0.68;if(!weightKg||weightKg<=0)return 0;return Math.max(0,Number(grams)/(weightKg*r)-ELIMINATION.average*Math.max(0,hoursElapsed));}
-export function bacRange({grams,weightKg,sex='h',hoursElapsed=0}){const r=sex==='f'?0.55:0.68;if(!weightKg||weightKg<=0)return {low:0,high:0};const b=Math.max(0,Number(grams)/(weightKg*r));return {low:Math.max(0,b-ELIMINATION.high*Math.max(0,hoursElapsed)),high:Math.max(0,b-ELIMINATION.low*Math.max(0,hoursElapsed))};}
-export const hoursToSober=(bac,e=ELIMINATION.average)=>bac>0?bac/e:0;
-export function formatNumber(n,d=1){if(n==null||Number.isNaN(Number(n)))return '0';return Number(n).toLocaleString('fr-FR',{minimumFractionDigits:0,maximumFractionDigits:d});}
-export const scaleNutrient=(v,a)=>Number(v||0)*Math.max(0,Number(a||0))/100;
+export const ETHANOL_DENSITY = 0.789; // g/ml
+export const KCAL_PER_G_ALCOHOL = 7;
+export const KCAL_PER_G_CARB = 4;
+
+export function pureAlcoholMl(volumeMl, abvPercent) {
+  return (volumeMl * abvPercent) / 100;
+}
+
+export function pureAlcoholGrams(volumeMl, abvPercent) {
+  return pureAlcoholMl(volumeMl, abvPercent) * ETHANOL_DENSITY;
+}
+
+export function alcoholKcal(volumeMl, abvPercent) {
+  return pureAlcoholGrams(volumeMl, abvPercent) * KCAL_PER_G_ALCOHOL;
+}
+
+export function carbKcal(volumeMl, sucrePer100ml) {
+  return ((volumeMl * sucrePer100ml) / 100) * KCAL_PER_G_CARB;
+}
+
+export function totalKcal(volumeMl, abvPercent, sucrePer100ml) {
+  return alcoholKcal(volumeMl, abvPercent) + carbKcal(volumeMl, sucrePer100ml);
+}
+
+export function standardUnits(volumeMl, abvPercent, gramsPerUnit) {
+  return pureAlcoholGrams(volumeMl, abvPercent) / gramsPerUnit;
+}
+
+// Formule de Widmark simplifiée — estimation du taux d'alcoolémie (g/L de sang)
+// r = coefficient de diffusion (0.68 homme / 0.55 femme en moyenne)
+export function bloodAlcoholEstimate({ grams, weightKg, sex = "h", hoursElapsed = 0 }) {
+  const r = sex === "f" ? 0.55 : 0.68;
+  if (!weightKg || weightKg <= 0) return 0;
+  const bacPromille = grams / (weightKg * r);
+  const eliminated = 0.15 * hoursElapsed; // élimination moyenne ≈ 0.10-0.15 g/L/h
+  return Math.max(0, bacPromille - eliminated);
+}
+
+// Temps estimé (en heures) pour revenir à 0 g/L
+export function hoursToSober(bacPromille) {
+  if (bacPromille <= 0) return 0;
+  return bacPromille / 0.15;
+}
+
+export function formatNumber(n, decimals = 1) {
+  if (n === null || n === undefined || isNaN(n)) return "0";
+  return Number(n).toLocaleString("fr-FR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: decimals,
+  });
+}
+
+export function scaleNutrient(per100Value, amount) {
+  return (per100Value * amount) / 100;
+}
