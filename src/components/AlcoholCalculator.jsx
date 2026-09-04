@@ -18,7 +18,8 @@ export default function AlcoholCalculator() {
   const [typeId, setTypeId] = useState("vin_rouge");
   const type = ALCOHOL_TYPES.find((t) => t.id === typeId);
   const [abv, setAbv] = useState(type.abv);
-  const [volume, setVolume] = useState(type.defVol);
+  const [servingLabel, setServingLabel] = useState(type.servings[0].label);
+  const [volume, setVolume] = useState(type.servings[0].ml);
   const [qty, setQty] = useState(1);
   const [sucre, setSucre] = useState(type.sucre100);
 
@@ -30,8 +31,17 @@ export default function AlcoholCalculator() {
     const t = ALCOHOL_TYPES.find((x) => x.id === id);
     setTypeId(id);
     setAbv(t.abv);
-    setVolume(t.defVol);
+    setServingLabel(t.servings[0].label);
+    setVolume(t.servings[0].ml);
     setSucre(t.sucre100);
+    setQty(1);
+  }
+
+  function handleServing(label) {
+    const s = type.servings.find((x) => x.label === label);
+    if (!s) return;
+    setServingLabel(label);
+    setVolume(s.ml);
   }
 
   const totalVolume = volume * qty;
@@ -109,13 +119,42 @@ export default function AlcoholCalculator() {
             <Field label="Sucres résiduels (g / 100 ml)">
               <NumberField min={0} value={sucre} onChange={setSucre} />
             </Field>
-            <Field label="Volume par verre (ml)">
-              <NumberField min={0} value={volume} onChange={setVolume} />
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-5">
+            <Field label="Format de service">
+              <select
+                value={servingLabel}
+                onChange={(e) => handleServing(e.target.value)}
+                className="input-num"
+              >
+                {type.servings.map((s) => (
+                  <option key={s.label} value={s.label}>{s.label}</option>
+                ))}
+                {!type.servings.some((s) => s.label === servingLabel) && (
+                  <option value={servingLabel}>Personnalisé ({formatNumber(volume, 0)} ml)</option>
+                )}
+              </select>
             </Field>
-            <Field label="Nombre de verres">
+            <Field label="Volume exact (ml)">
+              <NumberField
+                min={0}
+                value={volume}
+                onChange={(v) => {
+                  setVolume(v);
+                  const match = type.servings.find((s) => s.ml === v);
+                  setServingLabel(match ? match.label : "");
+                }}
+              />
+            </Field>
+            <Field label="Nombre de verres / doses">
               <NumberField min={1} value={qty} onChange={setQty} />
             </Field>
           </div>
+          <p className="text-[11px] text-muted font-mono -mt-2">
+            💡 Choisis « Bouteille » uniquement si tu comptes vraiment boire toute la bouteille — sinon reste
+            sur un format « verre » et ajuste le nombre de verres.
+          </p>
 
           <div className="tick-divider" />
 

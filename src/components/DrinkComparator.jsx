@@ -6,7 +6,15 @@ import NumberField from "./NumberField";
 
 function newEntry(idx) {
   const t = ALCOHOL_TYPES[idx % ALCOHOL_TYPES.length];
-  return { key: crypto.randomUUID(), typeId: t.id, abv: t.abv, volume: t.defVol, qty: 1, sucre: t.sucre100 };
+  return {
+    key: crypto.randomUUID(),
+    typeId: t.id,
+    abv: t.abv,
+    servingLabel: t.servings[0].label,
+    volume: t.servings[0].ml,
+    qty: 1,
+    sucre: t.sucre100,
+  };
 }
 
 export default function DrinkComparator() {
@@ -17,7 +25,16 @@ export default function DrinkComparator() {
   }
   function setType(key, typeId) {
     const t = ALCOHOL_TYPES.find((x) => x.id === typeId);
-    update(key, { typeId, abv: t.abv, volume: t.defVol, sucre: t.sucre100 });
+    update(key, { typeId, abv: t.abv, servingLabel: t.servings[0].label, volume: t.servings[0].ml, sucre: t.sucre100, qty: 1 });
+  }
+  function setServing(key, type, label) {
+    const s = type.servings.find((x) => x.label === label);
+    if (!s) return;
+    update(key, { servingLabel: label, volume: s.ml });
+  }
+  function setVolume(key, type, v) {
+    const match = type.servings.find((s) => s.ml === v);
+    update(key, { volume: v, servingLabel: match ? match.label : "" });
   }
   function addEntry() {
     if (entries.length >= 5) return;
@@ -45,8 +62,8 @@ export default function DrinkComparator() {
         <div className="text-xs uppercase tracking-[0.2em] text-copper font-mono mb-1">Instrument 02</div>
         <h2 className="font-display text-2xl md:text-3xl text-paper">Comparateur de boissons</h2>
         <p className="text-muted text-sm mt-1 max-w-xl">
-          Place jusqu'à 5 boissons côte à côte — vin, bière, spiritueux — pour comparer l'alcool pur et les
-          calories réellement consommées.
+          Place jusqu'à 5 boissons côte à côte — choisis un format de service réaliste (verre, dose, coupe...)
+          plutôt qu'une bouteille entière, pour comparer ce que tu consommes vraiment.
         </p>
       </div>
 
@@ -73,6 +90,23 @@ export default function DrinkComparator() {
                 </option>
               ))}
             </select>
+
+            <label className="block">
+              <span className="block text-[10px] uppercase text-muted font-mono mb-1">Format de service</span>
+              <select
+                value={c.servingLabel}
+                onChange={(e) => setServing(c.key, c.type, e.target.value)}
+                className="input-num"
+              >
+                {c.type.servings.map((s) => (
+                  <option key={s.label} value={s.label}>{s.label}</option>
+                ))}
+                {!c.type.servings.some((s) => s.label === c.servingLabel) && (
+                  <option value={c.servingLabel}>Personnalisé ({formatNumber(c.volume, 0)} ml)</option>
+                )}
+              </select>
+            </label>
+
             <div className="grid grid-cols-3 gap-2">
               <label className="block">
                 <span className="block text-[10px] uppercase text-muted font-mono mb-1">Titrage %</span>
@@ -80,7 +114,7 @@ export default function DrinkComparator() {
               </label>
               <label className="block">
                 <span className="block text-[10px] uppercase text-muted font-mono mb-1">Vol. ml</span>
-                <NumberField min={0} value={c.volume} onChange={(v) => update(c.key, { volume: v })} />
+                <NumberField min={0} value={c.volume} onChange={(v) => setVolume(c.key, c.type, v)} />
               </label>
               <label className="block">
                 <span className="block text-[10px] uppercase text-muted font-mono mb-1">Qté</span>
@@ -117,7 +151,7 @@ export default function DrinkComparator() {
               const top = sorted[0];
               const bottom = sorted[sorted.length - 1];
               const ratio = bottom.g > 0 ? (top.g / bottom.g).toFixed(1) : "∞";
-              return `${top.type.emoji} ${top.type.name} apporte ${ratio}× plus d'alcool pur que ${bottom.type.emoji} ${bottom.type.name} dans les quantités saisies.`;
+              return `${top.type.emoji} ${top.type.name} (${top.servingLabel} × ${top.qty}) apporte ${ratio}× plus d'alcool pur que ${bottom.type.emoji} ${bottom.type.name} (${bottom.servingLabel} × ${bottom.qty}).`;
             })()}
           </p>
         </div>
